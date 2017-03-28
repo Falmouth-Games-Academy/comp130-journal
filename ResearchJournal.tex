@@ -46,18 +46,29 @@ The Manhattan distance is a well known admissible heuristic, and is defined as $
 
 \subsection*{Optimizations}
 
-Given the success and popularity of A* pathfinding, there has been considerable effort to improve and refine it.  Typical speed-up enhancements include reducing the size of the search space using abstraction, and building more informed heuristics \cite{harabor2010breaking}, although the execution time, memory overhead, and whether the environment of the search system is static, dynamic, or real-time \cite{hart1968formal} must be considered.  Specific per case optimization is most important. For instance, a slightly overestimating heuristic increases the speed at the expense of accuracy \cite{millington2016artificial}, or were the map not to feature dead ends that would require back tracking then using the node with the best heuristic as far as a goal node is fovourable \cite{togelius20102009}.
-
-Abstraction can be found in implementing hierarchy (HPA*) or by using a navmesh \cite{cui2011based}.  HPA* breaks down the map into sections and is significantly faster than low level A* \cite{botea2004near}, speeding up a search by replacing it with a series of smaller searches \cite{botea2013pathfinding} gradually refined into a low level solution.  It is also possible to build more than one level of abstraction for HPA* \cite {jansen2007hpa}. By precomputing ideal routes across these larger sections; encouraging the algorithm to expand nodes from the perimeter rather than the interior \cite{harabor2012fast}, or node pruning with jump points \cite{harabor2011online}, symmetries can be drastically reduced, trading off the real time CPU resources with optimality of the solution. 
+Given the success and popularity of A* pathfinding, there has been considerable effort to improve and refine it.  Typical speed-up enhancements include reducing the size of the search space using abstraction, and building more informed heuristics \cite{harabor2010breaking}, although the execution time, memory overhead, and whether the environment of the search system is static, dynamic, or real-time \cite{hart1968formal} must be considered.  Static and dynamic systems are self explanatory, real time search works under the assumption that there is a limited amount of time to make a move.  Specific per case optimization is most important. For instance, a slightly overestimating heuristic increases the speed at the expense of accuracy \cite{millington2016artificial}, or were the map not to feature dead ends that would require back tracking then using the node with the best heuristic as far as a goal node is fovourable \cite{togelius20102009}.
 
 Dynamically changing environments \cite{botea2011ultra} are a common occurrence in games and A* has difficulty in solving the problem of random dynamics obstacles avoidance \cite{wang2012game}.  Sometimes we just want to start the movement in the correct direction before its ultimate outcome is known, as replanning from scratch every time the graph changes can be very computationally expensive \cite{ferguson2005guide}.  Pathfinding in a smaller space abstraction can reduce the memory footprint \cite{lawrence2013database} especially when the end node of the solution is subject to change.  A lookahead search is also effective for such problems \cite{korf1990real}, but although looking ahead can improve the solution quality, suboptimal solutions can be produced even with admissible and consistent heuristics \cite{bulitko2003lookahead}.
 
-It is better to use an array of stacks than a priority queue for maintaining the open nodes of an A* search If $N$ is the number of elements in the priority queue, the insertion and the extraction of an element both take $O(log N)$ which is faster than a constant time for inserting and a linear time for extracting as in the list implementation \cite{cazenave2006optimizations}.  Correctly maintaining the priority queue is key for optimization, allowing a lazier initialisation for the node cache; it is more efficient to use an array of the size of the map as the game map already fits in memory \cite{cazenave2006optimizations}.
+When maintaining the open nodes of an A* search, it is better to use an array of stacks than a priority queue. If $N$ is the number of elements in the priority queue, the insertion and the extraction of an element both take $O(log N)$ which is faster than a constant time for inserting and a linear time for extracting as in the list implementation \cite{cazenave2006optimizations}.  Correctly maintaining the priority queue is key for optimization, allowing a lazier initialisation for the node cache; it is more efficient to use an array of the size of the map as the game map already fits in memory \cite{cazenave2006optimizations}.
+
+\subsection*{Variations}
+
+Abstraction can be found in implementing hierarchy (HPA*) or by using a navmesh \cite{cui2011based}.  HPA* breaks down the map into sections and is significantly faster than low level A* \cite{botea2004near}, speeding up a search by replacing it with a series of smaller searches \cite{botea2013pathfinding} gradually refined into a low level solution.  It is also possible to build more than one level of abstraction for HPA* \cite {jansen2007hpa}. By precomputing ideal routes across these larger sections; encouraging the algorithm to expand nodes from the perimeter rather than the interior \cite{harabor2012fast}, or node pruning with jump points \cite{harabor2011online}, symmetries can be drastically reduced, trading off the real time CPU resources with optimality of the solution. 
+
+Iterative A* is a space-efficient version of A*, but it suffers from cycles in the search space (the price for using no storage), and repeated visits to states (the overhead of iterative deepening) \cite{bjornsson2005fringe}.
+
+Block A* pre-computes a database of all possible block topologies.  For each block, optimal distances between pairs of boundary cells are stored.  At runtime, Block A* expands an entire block at a time, as opposed to one individual cell \cite{botea2013pathfinding}
 
 \subsection*{Always with the triangles, your solution to everything is triangles}
 
-The most common method for building navigation meshes is by vertex-based decomposition \cite{hale2009full} collapsing corridors and tree components \cite{demyen2006efficient}, essentially splitting the map into triangles.  This has the advantage that the obtained triangular cell decomposition of the environment has $O(n)$ cells, where $n$ is the number of segments used to describe the obstacles in the environment \cite{kallmann2010navigation}.
+The most common method for building navigation meshes is by vertex-based decomposition \cite{hale2009full} collapsing corridors and tree components \cite{demyen2006efficient}, essentially splitting the map into triangles.  This has the advantage that the obtained triangular cell decomposition of the environment has $O(n)$ cells, where $n$ is the number of segments used to describe the obstacles in the environment \cite{kallmann2010navigation}.  In fact, a triangulation A* variant is being used in the StarCraft 2 game engine \cite{ontanon2013survey}.
 
+\subsection*{Scrubbing}
+
+Due to dead ends and corners, or when the initial heuristic values are overly optimistic \cite{bulitko2011real}, agents can ``scrub'' (repeatedly revisit) the state space.  State revisitation is inherently suboptimal, and can look unnatural which can reduce player immersion.  It can be reduced by setting sub goals (end nodes) in the state abstractions \cite{bulitko2010case}.
+
+A hill climbing agent performs no heuristic updates \cite{huntley2013search} and can brute force its way past scrubbing behaviour by only examining its neighbour.  Although it must be used with a cut off number of steps to avoid unnatural behaviour, as it is vulnerable to local plateaus \cite{richards1992learning}.
 
 \bibliographystyle{ieeetran}
 \bibliography{references}
@@ -66,6 +77,8 @@ The most common method for building navigation meshes is by vertex-based decompo
 
 
 \subsection*{WIP}
+
+scrubbing? Hill climbing moves?
 
 Monte carlo
 
@@ -77,42 +90,12 @@ Cellula autonoma
 
 A* whilst thorough, can be expensive
 
-often we just want to start in the right direction
 
-
-
-Hierarchical abstraction can potentially speed up a search by replacing it with a series of smaller searches \cite{botea2013pathfinding} gradually refined  into a low level solution. This eliminates the need to backtrack across hierarchical levels, thus eliminating a source of a potentially great slow down. \cite{botea2013pathfinding}
-
-Partial Refinement A* (PRA*) combines hierarchical abstraction with fast partial path refinement to effectively interleave path planning with path execution \cite{botea2013pathfinding} mapping small connected regions, to tiles on the next level of abstraction while preserving connectivity. Creating pyramids of coarser and coarser map representationsup to the point in which only single tiles remain that represent the original connected components. \cite{botea2013pathfinding}
+Partial Refinement A* (PRA*) combines hierarchical abstraction with fast partial path refinement to effectively interleave path planning with path execution \cite{botea2013pathfinding} mapping small connected regions, to tiles on the next level of abstraction while preserving connectivity. Creating pyramids of coarser and coarser map representations up to the point in which only single tiles remain that represent the original connected components. \cite{botea2013pathfinding}
 
 For finding paths subject to given time and path quality constraints, we choose an abstraction layer and find nodes representing the start and endpoints on the original map. Starting at this level, PRA*(k) uses A* to compute the shortest path and then projects the first k steps down to the next map abstraction level, where the shortest path is determined by only considering a small corridor around the projected path, etc. This process quickly finds high-quality initial paths on the original map which allows objects to start moving in the right direction quickly. \cite{botea2013pathfinding}
 
 HAA* [12] extends HPA* in two directions. First off, in classical pathfinding, a map is partinioned into traversable terrain and blocked areas. HAA* makes a finer distinction, allowing to define several types of terrain, such as ground, water, and walls. Secondly, HAA* handles mobile units with variable sizes and variable terrain traversal capabilities. \cite{botea2013pathfinding}
 
-Block A* pre-computes a database of all possible block topologies.  For each block, optimal distances between pairs of boundary cells are stored.  At runtime, Block A* expands an entire block at a time, as opposed to one individual cell \cite{botea2013pathfinding}
-
-
-
-The frequently used assumption that traversable areas on a map have a uniform traversal cost leads to a considerable degree of symmetry. Jump point search
-allows pruning part of the successors of a node, ensuring that optimality and completeness are preserved.
-
-
-
-Triangulation A* and Triangular Reduction A*... A TA* variant is being used in the StarCraft 2 game engine.
-
-
-
-Real-time search works under the assumption that an agent has a limited amount of time before having to make a move
 
 The general solving framework includes a planning step, a learning step and an acting step. In the planning step, the agent explores the area around its current location.
-
-scrubbing? Hill climbing moves?
-
-\section*{more papers}
-
-
-
-
-
-
-
